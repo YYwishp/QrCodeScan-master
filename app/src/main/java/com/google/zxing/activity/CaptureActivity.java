@@ -1,20 +1,18 @@
 package com.google.zxing.activity;
 
+import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
-import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.os.Vibrator;
-import android.provider.MediaStore;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.SurfaceHolder;
@@ -25,42 +23,40 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.zxing.BarcodeFormat;
-import com.google.zxing.BinaryBitmap;
-import com.google.zxing.ChecksumException;
-import com.google.zxing.DecodeHintType;
-import com.google.zxing.FormatException;
-import com.google.zxing.MultiFormatReader;
-import com.google.zxing.NotFoundException;
 import com.google.zxing.Result;
-import com.google.zxing.camera.BitmapLuminanceSource;
 import com.google.zxing.camera.CameraManager;
-import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.decoding.CaptureActivityHandler;
 import com.google.zxing.decoding.InactivityTimer;
-import com.google.zxing.decoding.RGBLuminanceSource;
-import com.google.zxing.qrcode.QRCodeReader;
 import com.google.zxing.view.ViewfinderView;
 import com.qrcodescan.R;
 
 import java.io.IOException;
-import java.util.Hashtable;
+import java.util.List;
 import java.util.Vector;
-import com.google.zxing.decoding.DecodeFormatManager;
+
 import com.utils.CodeUtils;
 import com.utils.ImageUtil;
+
+import pub.devrel.easypermissions.AfterPermissionGranted;
+import pub.devrel.easypermissions.AppSettingsDialog;
+import pub.devrel.easypermissions.EasyPermissions;
 
 /**
  * Initial the camera
  *
  * @author Ryan.Tang
  */
-public class CaptureActivity extends AppCompatActivity implements Callback {
+public class CaptureActivity extends AppCompatActivity implements Callback ,EasyPermissions.PermissionCallbacks{
 	//	private Button cancelScanButton;
 	public static final int RESULT_CODE_QR_SCAN = 0xA1;
 	public static final String INTENT_EXTRA_KEY_QR_SCAN = "qr_scan_result";
 	private static final int REQUEST_CODE_SCAN_GALLERY = 100;
 	private static final float BEEP_VOLUME = 0.10f;
 	private static final long VIBRATE_DURATION = 200L;
+	/**
+	 * 请求READ_RESTORE权限码
+	 */
+	public static final int REQUEST_READ_RESTORE_PERM = 102;
 	/**
 	 * 选择系统图片Request Code
 	 */
@@ -88,12 +84,16 @@ public class CaptureActivity extends AppCompatActivity implements Callback {
 	private Bitmap scanBitmap;
 	private SurfaceHolder surfaceHolder;
 
+
+
 	/**
 	 * Called when the activity is first created.
 	 */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+
 		setContentView(R.layout.activity_scanner);
 		//ViewUtil.addTopView(getApplicationContext(), this, R.string.scan_card);
 		CameraManager.init(getApplication());
@@ -109,11 +109,8 @@ public class CaptureActivity extends AppCompatActivity implements Callback {
 		more.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				//打开手机中的相册
-				Intent innerIntent = new Intent(Intent.ACTION_GET_CONTENT); //"android.intent.action.GET_CONTENT"
-				innerIntent.setType("image/*");
-				Intent wrapperIntent = Intent.createChooser(innerIntent, "选择二维码图片");
-				startActivityForResult(wrapperIntent, REQUEST_CODE_SCAN_GALLERY);
+				//打开手机中的相册,读取权限
+				askReadStorage();
 			}
 		});
 		hasSurface = false;
@@ -287,6 +284,60 @@ public class CaptureActivity extends AppCompatActivity implements Callback {
 		if (vibrate) {
 			Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
 			vibrator.vibrate(VIBRATE_DURATION);
+		}
+	}
+
+
+	/**
+	 * EsayPermissions接管权限处理逻辑
+	 * @param requestCode
+	 * @param permissions
+	 * @param grantResults
+	 */
+	@Override
+	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+		// Forward results to EasyPermissions
+		EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
+	}
+
+	@Override
+	public void onPermissionsGranted(int requestCode, List<String> perms) {
+
+	}
+
+	/**
+	 * 请求CAMERA权限码
+	 */
+	public static final int READ_RESTORE = 102;
+
+	@Override
+	public void onPermissionsDenied(int requestCode, List<String> perms) {
+
+		Toast.makeText(this, "执行onPermissionsDenied()...", Toast.LENGTH_SHORT).show();
+//		if (EasyPermissions.somePermissionPermanentlyDenied(this, perms)) {
+//			new AppSettingsDialog.Builder(this, "当前App需要申请camera权限,需要打开设置页面么?")
+//					.setTitle("权限申请")
+//					.setPositiveButton("确认")
+//					.setNegativeButton("取消", null /* click listener */)
+//					.setRequestCode(READ_RESTORE)
+//					.build()
+//					.show();
+//		}
+	}
+
+	@AfterPermissionGranted(REQUEST_READ_RESTORE_PERM)
+	public void askReadStorage() {
+		if (EasyPermissions.hasPermissions(this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
+			// Have permission, do the thing!
+			Intent innerIntent = new Intent(Intent.ACTION_GET_CONTENT); //"android.intent.action.GET_CONTENT"
+			innerIntent.setType("image/*");
+			Intent wrapperIntent = Intent.createChooser(innerIntent, "选择二维码图片");
+			startActivityForResult(wrapperIntent, REQUEST_CODE_SCAN_GALLERY);
+		} else {
+			// Ask for one permission
+			EasyPermissions.requestPermissions(this, "需要请求文件读取权限", REQUEST_READ_RESTORE_PERM, Manifest.permission.READ_EXTERNAL_STORAGE);
 		}
 	}
 }

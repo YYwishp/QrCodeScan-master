@@ -1,6 +1,7 @@
 package com.activity;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -27,7 +28,7 @@ import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.AppSettingsDialog;
 import pub.devrel.easypermissions.EasyPermissions;
 
-public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks{
+public class MainActivity extends Activity implements EasyPermissions.PermissionCallbacks{
 	@BindView(R.id.openQrCodeScan)
 	Button openQrCodeScan;
 	@BindView(R.id.text)
@@ -55,7 +56,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 		switch (view.getId()) {
 			case R.id.openQrCodeScan:
 				//打开二维码扫描界面
-				cameraTask(R.id.openQrCodeScan);
+				cameraTask();
 				break;
 			case R.id.CreateQrCode:
 				//获取输入的文本信息
@@ -110,10 +111,10 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
 
 	@AfterPermissionGranted(REQUEST_CAMERA_PERM)
-	public void cameraTask(int viewId) {
+	public void cameraTask() {
 		if (EasyPermissions.hasPermissions(this, Manifest.permission.CAMERA)) {
 			// Have permission, do the thing!
-			onViewClick(viewId);
+			onViewClick();
 		} else {
 			// Ask for one permission
 			EasyPermissions.requestPermissions(this, "需要请求camera权限", REQUEST_CAMERA_PERM, Manifest.permission.CAMERA);
@@ -122,15 +123,16 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
 	/**
 	 * 打开摄像头
-	 * @param viewId
 	 */
-	private void onViewClick(int viewId) {
-		if (CommonUtil.isCameraCanUse()) {
-			Intent intent = new Intent(MainActivity.this, CaptureActivity.class);
+	private void onViewClick() {
+		Intent intent = new Intent(MainActivity.this, CaptureActivity.class);
 			startActivityForResult(intent, REQUEST_CODE);
-		} else {
-			Toast.makeText(this, "请打开此应用的摄像头权限！", Toast.LENGTH_SHORT).show();
-		}
+//		if (CommonUtil.isCameraCanUse()) {
+//			Intent intent = new Intent(MainActivity.this, CaptureActivity.class);
+//			startActivityForResult(intent, REQUEST_CODE);
+//		} else {
+//			Toast.makeText(this, "请打开此应用的摄像头权限！", Toast.LENGTH_SHORT).show();
+//		}
 	}
 
 	@Override
@@ -141,14 +143,14 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 	@Override
 	public void onPermissionsDenied(int requestCode, List<String> perms) {
 		Toast.makeText(this, "执行onPermissionsDenied()...", Toast.LENGTH_SHORT).show();
-		if (EasyPermissions.somePermissionPermanentlyDenied(this, perms)) {
-			new AppSettingsDialog.Builder(this, "当前App需要申请camera权限,需要打开设置页面么?")
-					.setTitle("权限申请")
-					.setPositiveButton("确认")
-					.setNegativeButton("取消", null /* click listener */)
-					.setRequestCode(REQUEST_CAMERA_PERM)
-					.build()
-					.show();
-		}
+//		if (EasyPermissions.somePermissionPermanentlyDenied(this, perms)) {
+//			new AppSettingsDialog.Builder(this, "当前App需要申请camera权限,需要打开设置页面么?")
+//					.setTitle("权限申请")
+//					.setPositiveButton("确认")
+//					.setNegativeButton("取消", null /* click listener */)
+//					.setRequestCode(REQUEST_CAMERA_PERM)
+//					.build()
+//					.show();
+//		}
 	}
 }

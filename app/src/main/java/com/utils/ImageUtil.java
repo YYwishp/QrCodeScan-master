@@ -42,7 +42,6 @@ public class ImageUtil {
      * @param context
      * @param imageUri
      */
-    @TargetApi(19)
     public static String getImageAbsolutePath(Context context, Uri imageUri) {
         if (context == null || imageUri == null)
             return null;
